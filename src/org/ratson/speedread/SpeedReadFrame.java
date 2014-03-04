@@ -14,11 +14,13 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.prefs.Preferences;
@@ -37,8 +39,22 @@ import javax.swing.JProgressBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 
+import org.ratson.speedread.core.AlignmentRule;
+import org.ratson.speedread.core.EuropeanAlignmentRule;
+import org.ratson.speedread.core.ProportionalTimeEstimator;
+import org.ratson.speedread.core.SpaceWordBreaker;
+import org.ratson.speedread.core.TimeEstimator;
+import org.ratson.speedread.core.WordBreaker;
+import org.ratson.speedread.core.WordGrouper;
+
+import configuration.Configurable;
+
+import dialogs.HelpDialog;
+import dialogs.JFontChooser;
+import dialogs.SettingsDialog;
+
 @SuppressWarnings("serial")
-public class SpeedReadFrame extends SpeedReaderApp{
+public class SpeedReadFrame extends JFrame implements Configurable{
 
 	private static class AlignedWord{
 		public int align;
@@ -53,12 +69,16 @@ public class SpeedReadFrame extends SpeedReaderApp{
 	private static final String KEY_COLOR_FONT = "WordColor";
 	private static final String KEY_COLOR_ALIGN = "KeyColor";
 	private static final String KEY_LAST_DIR = "LastDirectory";
+	
+	private static final String KEY_WORDBREAK_DICTIONARY = "Dictionary";
+			
 	private static final String CMDLINE_HELP_TEXT = 
 			"java -jar speedread.jar [ARGS] [FILE]\n"+
 			"   ARGS is one of:\n"+
 			"   -h --help  Show this help\n"+
 			"   -c --clipboard  Load clipboard contents on start\n"+
 			"   FILE must be text file. For now, only plain text files are supported.";
+	private String wordBreakerDictionary;
 
 
 	private void loadPrefs(){
@@ -87,6 +107,12 @@ public class SpeedReadFrame extends SpeedReaderApp{
 			lastDirectory = new File(prefs.get(KEY_LAST_DIR, "./"));
 			if (!lastDirectory.exists() || !lastDirectory.isDirectory())
 				lastDirectory = new File("./");
+			
+			//load word breaker settings
+			wordBreakerDictionary = prefs.get(KEY_WORDBREAK_DICTIONARY, "");
+			
+			//load scheduler settings
+			
 		}catch(Exception e){
 			System.err.println("Failed to load preferences:"+e.getMessage());
 			e.printStackTrace();
@@ -193,6 +219,7 @@ public class SpeedReadFrame extends SpeedReaderApp{
 	private JProgressBar progressBar;
 	private File lastDirectory = new File ("./");
 	private JLabel labelCPM;
+	private String langDefinitionFile="";
 	
 	
 	public SpeedReadFrame() {
@@ -434,14 +461,7 @@ public class SpeedReadFrame extends SpeedReaderApp{
 		breaker = new SpaceWordBreaker();
 		grouper = new WordGrouper();
 		aligner = new EuropeanAlignmentRule();
-		InputStream istrm =
-				getClass().getResourceAsStream("/language_data/word-classes-en-ru.txt");
-		grouper.loadDictionary(new InputStreamReader(istrm));
-		try {
-			istrm.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		reloadLanguageDefinition("");
 		timeEstimator = new ProportionalTimeEstimator();
 	}
 
@@ -536,5 +556,94 @@ public class SpeedReadFrame extends SpeedReaderApp{
 			isPlaying = true;
 			scheduleNextWord();
 		}
+	}
+	public PhraseDisplay getDisplay() {
+		return display;
+	}
+	public TimeEstimator getTimeEstimator() {
+		return timeEstimator;
+	}
+	public String getLangDefinitionFilePath() {
+		return langDefinitionFile;
+	}
+	public void reloadLanguageDefinition(String strLangDefPath) {
+		InputStream istrm;
+		try {
+			if (langDefinitionFile.isEmpty()){
+				istrm =	getClass().getResourceAsStream("/language_data/word-classes-en-ru.txt");	
+			}else{
+				istrm =	new FileInputStream(langDefinitionFile);
+			}
+			grouper.clearDictionary();
+			grouper.loadDictionary(new InputStreamReader(istrm));
+			istrm.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}		
+	}
+	
+	
+	@Override
+	public HashMap<String, Object> getConfiguration() {
+		HashMap<String, Object> config = new HashMap<String, Object>();
+		config.put(KEY_CPM, charactersPerMinute);
+		
+		Font font = display.getFont();
+		config.put(KEY_FONT_FAMILY, font.getName());
+		config.put(KEY_FONT_SIZE, font.getSize());
+		config.put(KEY_FONT_STYLE, font.getStyle());
+		
+		//save colors
+		config.put(KEY_COLOR_BG, hexCOlor(display.getBackground()));
+		config.put(KEY_COLOR_FONT, hexCOlor(display.getForeground()));
+		config.put(KEY_COLOR_ALIGN, hexCOlor(display.getAlignKeyColor()));
+
+		config.put(KEY_LAST_DIR, lastDirectory.getAbsolutePath());
+		return config;
+	}
+	@Override
+	public HashMap<String, Object> getDefaultConfiguration() {
+		HashMap<String, Object> config = new HashMap<String, Object>();
+		config.put(KEY_CPM, 2000);
+		
+		config.put(KEY_FONT_FAMILY, "Arial");
+		config.put(KEY_FONT_SIZE, "24");
+		config.put(KEY_FONT_STYLE, 0);
+		
+		//save colors
+		config.put(KEY_COLOR_BG, "");
+		config.put(KEY_COLOR_FONT, "");
+		config.put(KEY_COLOR_ALIGN, "");
+
+		config.put(KEY_LAST_DIR, "");
+		return config;
+	}
+	@Override
+	public void applyConfiguration(HashMap<String, Object> prefs) {
+		// TODO Auto-generated method stub
+		prefs.putInt(KEY_CPM, charactersPerMinute);
+		
+		Font font = display.getFont();
+		String fontFam = prefs.get(KEY_FONT_FAMILY,font.getName());
+		int fontSz = prefs.getInt(KEY_FONT_SIZE, font.getSize());
+		int fontStyle = prefs.getInt(KEY_FONT_STYLE, font.getStyle());
+		
+		Font newFont = new Font(fontFam, fontStyle, fontSz);
+		display.setFont(newFont);
+		
+		//save colors
+		String clr = prefs.get(KEY_COLOR_BG, null);
+		if (clr!=null)
+			display.setBackground(Color.decode(clr));
+		clr = prefs.get(KEY_COLOR_FONT, null);
+		if (clr!=null)
+			display.setForeground(Color.decode(clr.toUpperCase()));
+		clr = prefs.get(KEY_COLOR_ALIGN, null);
+		if (clr!=null)
+			display.setAlignKeyColor(Color.decode(clr.toUpperCase()));
+		lastDirectory = new File(prefs.get(KEY_LAST_DIR, "./"));
+		if (!lastDirectory.exists() || !lastDirectory.isDirectory())
+			lastDirectory = new File("./");
+		
 	}
 }
