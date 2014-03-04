@@ -1,0 +1,28 @@
+#Postfix words
+ли	R
+
+#Prepositions
+к	L
+ко	L
+при	L
+за	L
+со	L
+с	L
+не	L
+-	S
+то	S
+
+#Punctuation marks
+,	P
+.	P
+?	P
+!	P
+;	P
+:	P
+'	P
+"	P
+
+
+#### English classes
+a	L
+the	L
