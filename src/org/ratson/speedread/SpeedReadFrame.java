@@ -621,17 +621,15 @@ public class SpeedReadFrame extends JFrame implements Configurable{
 	@Override
 	public void applyConfiguration(HashMap<String, Object> prefs) {
 		// TODO Auto-generated method stub
-		prefs.putInt(KEY_CPM, charactersPerMinute);
+		charactersPerMinute = (Integer)prefs.get(KEY_CPM);
 		
-		Font font = display.getFont();
-		String fontFam = prefs.get(KEY_FONT_FAMILY,font.getName());
-		int fontSz = prefs.getInt(KEY_FONT_SIZE, font.getSize());
-		int fontStyle = prefs.getInt(KEY_FONT_STYLE, font.getStyle());
 		
-		Font newFont = new Font(fontFam, fontStyle, fontSz);
-		display.setFont(newFont);
+		String fontName = (String)prefs.get(KEY_FONT_FAMILY); 
+		int fSize = (Integer)prefs.get(KEY_FONT_SIZE);
+		int fStyle = (Integer)prefs.get(KEY_FONT_STYLE);
 		
-		//save colors
+		
+		//apply colors
 		String clr = prefs.get(KEY_COLOR_BG, null);
 		if (clr!=null)
 			display.setBackground(Color.decode(clr));
