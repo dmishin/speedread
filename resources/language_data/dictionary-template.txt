@@ -1,0 +1,32 @@
+#Dictionary file
+#File format:
+# Lines starting with # are comments; empty lines are ignored.
+# Other lines have format:
+# <WORD> <TAB> <CLASS>
+# where 
+#   <WORD> is a language word
+#   <TAB> is *exactly* *one* *tabulateion* *character*.
+#         There should be no spaces of ther separators.
+#   <CLASS> is one of 
+#     L - Left-grouping small word
+#     R - Right-grouping small word
+#     S - L + R 
+#     P - punctuation character
+
+# Example for English:
+      
+#Punctuation marks
+,	P
+.	P
+?	P
+!	P
+;	P
+:	P
+'	P
+"	P
+
+#### English classes
+a	L
+the	L
+
+and	R

@@ -44,6 +44,12 @@ public class SettingsDialogBase extends JDialog {
 	protected JTextField fldLangDefinitionPath;
 	protected PhraseDisplay phraseDisplay;
 	protected JCheckBox cbUseInternal;
+	protected JButton btnEditFont;
+	protected JButton btnEditBgColor;
+	protected JButton btnEditFgColor;
+	protected JButton btnEditKeyCOlor;
+	protected JButton btnBrowseLangDefinition;
+	protected JButton btnNewLangDefFile;
 
 	/**
 	 * Launch the application.
@@ -99,7 +105,8 @@ public class SettingsDialogBase extends JDialog {
 				fldFontName.setColumns(10);
 			}
 			{
-				JButton btnEditFont = new JButton("...");
+				btnEditFont = new JButton("...");
+				btnEditFont.setActionCommand("edit-font");
 				GridBagConstraints gbc_btnEditFont = new GridBagConstraints();
 				gbc_btnEditFont.insets = new Insets(0, 0, 5, 0);
 				gbc_btnEditFont.gridx = 2;
@@ -126,12 +133,13 @@ public class SettingsDialogBase extends JDialog {
 				fldBgColor.setColumns(10);
 			}
 			{
-				JButton button = new JButton("...");
+				btnEditBgColor = new JButton("...");
+				btnEditBgColor.setActionCommand("edit-bg-color");
 				GridBagConstraints gbc_button = new GridBagConstraints();
 				gbc_button.insets = new Insets(0, 0, 5, 0);
 				gbc_button.gridx = 2;
 				gbc_button.gridy = 1;
-				panel.add(button, gbc_button);
+				panel.add(btnEditBgColor, gbc_button);
 			}
 			{
 				JLabel lblForeground = new JLabel("Foreground:");
@@ -153,12 +161,13 @@ public class SettingsDialogBase extends JDialog {
 				fldFgColor.setColumns(10);
 			}
 			{
-				JButton button = new JButton("...");
+				btnEditFgColor = new JButton("...");
+				btnEditFgColor .setActionCommand("edit-fg-color");
 				GridBagConstraints gbc_button = new GridBagConstraints();
 				gbc_button.insets = new Insets(0, 0, 5, 0);
 				gbc_button.gridx = 2;
 				gbc_button.gridy = 2;
-				panel.add(button, gbc_button);
+				panel.add(btnEditFgColor, gbc_button);
 			}
 			{
 				JLabel lblKey = new JLabel("Key:");
@@ -180,12 +189,13 @@ public class SettingsDialogBase extends JDialog {
 				fldKeyColor.setColumns(10);
 			}
 			{
-				JButton button = new JButton("...");
+				btnEditKeyCOlor = new JButton("...");
+				btnEditKeyCOlor.setActionCommand("edit-key-color");;
 				GridBagConstraints gbc_button = new GridBagConstraints();
 				gbc_button.insets = new Insets(0, 0, 5, 0);
 				gbc_button.gridx = 2;
 				gbc_button.gridy = 3;
-				panel.add(button, gbc_button);
+				panel.add(btnEditKeyCOlor, gbc_button);
 			}
 			{
 				phraseDisplay = new PhraseDisplay();
@@ -320,22 +330,24 @@ public class SettingsDialogBase extends JDialog {
 				fldLangDefinitionPath.setColumns(10);
 			}
 			{
-				JButton button = new JButton("...");
-				button.setToolTipText("Browse for file");
+				btnBrowseLangDefinition = new JButton("...");
+				btnBrowseLangDefinition.setActionCommand("browse-lang-definition");
+				btnBrowseLangDefinition.setToolTipText("Browse for file");
 				GridBagConstraints gbc_button = new GridBagConstraints();
 				gbc_button.insets = new Insets(0, 0, 5, 5);
 				gbc_button.gridx = 2;
 				gbc_button.gridy = 0;
-				panel.add(button, gbc_button);
+				panel.add(btnBrowseLangDefinition, gbc_button);
 			}
 			{
-				JButton btnNew = new JButton("New");
-				btnNew.setToolTipText("Create new empty file with comments");
+				btnNewLangDefFile = new JButton("New");
+				btnNewLangDefFile.setActionCommand("new-lang-definition");
+				btnNewLangDefFile.setToolTipText("Create new empty file with comments");
 				GridBagConstraints gbc_btnNew = new GridBagConstraints();
 				gbc_btnNew.insets = new Insets(0, 0, 5, 0);
 				gbc_btnNew.gridx = 3;
 				gbc_btnNew.gridy = 0;
-				panel.add(btnNew, gbc_btnNew);
+				panel.add(btnNewLangDefFile, gbc_btnNew);
 			}
 			{
 				cbUseInternal = new JCheckBox("Use internal (EN, RU)");
