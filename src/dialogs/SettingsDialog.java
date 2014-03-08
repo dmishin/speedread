@@ -51,51 +51,5 @@ public class SettingsDialog extends SettingsDialogBase {
 	private String encodeFont(Font f){
 		return f.getName()+" "+f.getSize()+" "+f.getStyle();
 	}
-	
-	private void applyParameters(){
-		PhraseDisplay disp = app.getDisplay();
-		disp.setForeground(phraseDisplay.getForeground());
-		disp.setBackground(phraseDisplay.getBackground());
-		disp.setAlignKeyColor(phraseDisplay.getAlignKeyColor());
-		disp.setFont(phraseDisplay.getFont());
-		
-		ProportionalTimeEstimator estimator = (ProportionalTimeEstimator)app.getTimeEstimator();
-		estimator.wordDelay = parseDouble("word weight", fldWordWeight.getText(), 0, Double.MAX_VALUE, "Value must be positive");
-		estimator.characterWeight = parseDouble("character weight", fldLetterWeight.getText(), 0, Double.MAX_VALUE, "Value must be positive");
-		
-		estimator.bigWordTreshold = parseInteger( "long word treshold", fldLongWordTreshold.getText(), 0, 10000, "Value is out of range");
-		estimator.bigWordPenalty = parseDouble("Big word letter penalty", fldLongWordLetterWeight.getText(), 0, Double.MAX_VALUE, "Value must be positive");
-
-		String strLangDefPath = fldLangDefinitionPath.getText();
-		if (cbUseInternal.isSelected())
-			strLangDefPath = "";
-		app.reloadLanguageDefinition(strLangDefPath);
-		fldLangDefinitionPath.setText(app.getLangDefinitionFilePath());
-		
-	}
-
-	private double parseInteger(String what, String strDouble, int min,
-			int max, String errorMessag) {
-		try{
-			int x = Integer.parseInt(strDouble);
-			if (! (x>=min && x <= max) )
-				throw new RuntimeException("Failed to parse "+what+": "+errorMessag);
-			return x;
-		}catch(NumberFormatException e){
-			throw new RuntimeException("Failed to parse "+what+", error: "+e.getMessage());
-		}
-	}
-
-	private double parseDouble(String what, String strDouble, double min,
-			double max, String errorMessag) {
-		try{
-			double x = Double.parseDouble(strDouble);
-			if (! (x>=min && x <= max) )
-				throw new RuntimeException("Failed to parse "+what+": "+errorMessag);
-			return x;
-		}catch(NumberFormatException e){
-			throw new RuntimeException("Failed to parse "+what+", error: "+e.getMessage());
-		}
-	}
 
 }

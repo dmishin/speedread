@@ -47,14 +47,13 @@ import org.ratson.speedread.core.TimeEstimator;
 import org.ratson.speedread.core.WordBreaker;
 import org.ratson.speedread.core.WordGrouper;
 
-import configuration.Configurable;
 
 import dialogs.HelpDialog;
 import dialogs.JFontChooser;
 import dialogs.SettingsDialog;
 
 @SuppressWarnings("serial")
-public class SpeedReadFrame extends JFrame implements Configurable{
+public class SpeedReadFrame extends JFrame {
 
 	private static class AlignedWord{
 		public int align;
@@ -580,70 +579,5 @@ public class SpeedReadFrame extends JFrame implements Configurable{
 		} catch (IOException e) {
 			e.printStackTrace();
 		}		
-	}
-	
-	
-	@Override
-	public HashMap<String, Object> getConfiguration() {
-		HashMap<String, Object> config = new HashMap<String, Object>();
-		config.put(KEY_CPM, charactersPerMinute);
-		
-		Font font = display.getFont();
-		config.put(KEY_FONT_FAMILY, font.getName());
-		config.put(KEY_FONT_SIZE, font.getSize());
-		config.put(KEY_FONT_STYLE, font.getStyle());
-		
-		//save colors
-		config.put(KEY_COLOR_BG, hexCOlor(display.getBackground()));
-		config.put(KEY_COLOR_FONT, hexCOlor(display.getForeground()));
-		config.put(KEY_COLOR_ALIGN, hexCOlor(display.getAlignKeyColor()));
-
-		config.put(KEY_LAST_DIR, lastDirectory.getAbsolutePath());
-		return config;
-	}
-	@Override
-	public HashMap<String, Object> getDefaultConfiguration() {
-		HashMap<String, Object> config = new HashMap<String, Object>();
-		config.put(KEY_CPM, 2000);
-		
-		config.put(KEY_FONT_FAMILY, "Arial");
-		config.put(KEY_FONT_SIZE, "24");
-		config.put(KEY_FONT_STYLE, 0);
-		
-		//save colors
-		config.put(KEY_COLOR_BG, "");
-		config.put(KEY_COLOR_FONT, "");
-		config.put(KEY_COLOR_ALIGN, "");
-
-		config.put(KEY_LAST_DIR, "");
-		return config;
-	}
-	@Override
-	public void applyConfiguration(HashMap<String, Object> prefs) {
-		// TODO Auto-generated method stub
-		prefs.putInt(KEY_CPM, charactersPerMinute);
-		
-		Font font = display.getFont();
-		String fontFam = prefs.get(KEY_FONT_FAMILY,font.getName());
-		int fontSz = prefs.getInt(KEY_FONT_SIZE, font.getSize());
-		int fontStyle = prefs.getInt(KEY_FONT_STYLE, font.getStyle());
-		
-		Font newFont = new Font(fontFam, fontStyle, fontSz);
-		display.setFont(newFont);
-		
-		//save colors
-		String clr = prefs.get(KEY_COLOR_BG, null);
-		if (clr!=null)
-			display.setBackground(Color.decode(clr));
-		clr = prefs.get(KEY_COLOR_FONT, null);
-		if (clr!=null)
-			display.setForeground(Color.decode(clr.toUpperCase()));
-		clr = prefs.get(KEY_COLOR_ALIGN, null);
-		if (clr!=null)
-			display.setAlignKeyColor(Color.decode(clr.toUpperCase()));
-		lastDirectory = new File(prefs.get(KEY_LAST_DIR, "./"));
-		if (!lastDirectory.exists() || !lastDirectory.isDirectory())
-			lastDirectory = new File("./");
-		
 	}
 }

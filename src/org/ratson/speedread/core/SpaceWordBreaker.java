@@ -3,8 +3,6 @@ package org.ratson.speedread.core;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import configuration.Configurable;
-
 /** Word breaker for the European languages, using spaces for word separation
  * */
 public class SpaceWordBreaker implements WordBreaker{
