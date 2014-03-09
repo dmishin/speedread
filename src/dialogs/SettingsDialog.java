@@ -102,6 +102,22 @@ public class SettingsDialog extends SettingsDialogBase {
 				fldLangDefinitionPath.setEnabled(! cbUseInternal.isSelected());
 			}
 		});
+		ActionListener okCancelListener = new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (e.getActionCommand().equals("OK")){
+					applySettings();
+				}else if (e.getActionCommand().equals("Cancel")){
+					System.out.println("Cancelled");
+				}else{
+					System.err.println("Unknown action command: "+e.getActionCommand());
+					return;
+				}
+				setVisible(false);
+			}
+		};
+		btnOk.addActionListener(okCancelListener);
+		btnCancel.addActionListener(okCancelListener);
 	}
 
 	private boolean createNewLangDefFile(File file) {
@@ -216,6 +232,29 @@ public class SettingsDialog extends SettingsDialogBase {
 	}
 	private String encodeFont(Font f){
 		return f.getName()+" "+f.getSize()+" "+f.getStyle();
+	}
+	
+	public void applySettings(){
+		app.setDisplayFont(phraseDisplay.getFont());
+		app.setDisplayColors(phraseDisplay.getForeground(), 
+					phraseDisplay.getBackground(),
+					phraseDisplay.getAlignKeyColor());
+		if (cbUseInternal.isSelected())
+			app.setLangDefinitionFilePath("");
+		else
+			app.setLangDefinitionFilePath(fldLangDefinitionPath.getText());
+		
+		ProportionalTimeEstimator estimator = (ProportionalTimeEstimator)app.getTimeEstimator();
+		
+		try{
+			estimator.wordDelay = Double.parseDouble(fldWordWeight.getText());
+		
+			estimator.characterWeight = Double.parseDouble(fldLetterWeight.getText());
+			estimator.bigWordTreshold = Integer.parseInt(fldLongWordTreshold.getText());
+			estimator.bigWordPenalty = Double.parseDouble(fldLongWordLetterWeight.getText());
+		}catch(NumberFormatException e){
+			JOptionPane.showMessageDialog(this, "Bad number format: "+e.getMessage());
+		}
 	}
 
 }

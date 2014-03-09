@@ -15,6 +15,7 @@ import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +47,8 @@ import org.ratson.speedread.core.SpaceWordBreaker;
 import org.ratson.speedread.core.TimeEstimator;
 import org.ratson.speedread.core.WordBreaker;
 import org.ratson.speedread.core.WordGrouper;
+
+
 
 
 import dialogs.HelpDialog;
@@ -460,7 +463,12 @@ public class SpeedReadFrame extends JFrame {
 		breaker = new SpaceWordBreaker();
 		grouper = new WordGrouper();
 		aligner = new EuropeanAlignmentRule();
-		reloadLanguageDefinition("");
+		try {
+			reloadLanguageDefinition("");
+		} catch (IOException e) {
+			System.err.println("Faield to load default language definition!");
+			e.printStackTrace();
+		}
 		timeEstimator = new ProportionalTimeEstimator();
 	}
 
@@ -565,19 +573,34 @@ public class SpeedReadFrame extends JFrame {
 	public String getLangDefinitionFilePath() {
 		return langDefinitionFile;
 	}
-	public void reloadLanguageDefinition(String strLangDefPath) {
+	public void reloadLanguageDefinition(String strLangDefPath) throws IOException {
 		InputStream istrm;
+		if (langDefinitionFile.isEmpty()){
+			istrm =	getClass().getResourceAsStream("/language_data/word-classes-en-ru.txt");	
+		}else{
+			istrm =	new FileInputStream(langDefinitionFile);
+		}
+		grouper.clearDictionary();
+		grouper.loadDictionary(new InputStreamReader(istrm));
+		langDefinitionFile = strLangDefPath;
+		istrm.close();
+	}
+	public void setDisplayFont(Font font) {
+		display.setFont(font);
+	}
+	public void setLangDefinitionFilePath(String path) {
+		if (path.equals(langDefinitionFile))
+			return; //nothing to do here;
 		try {
-			if (langDefinitionFile.isEmpty()){
-				istrm =	getClass().getResourceAsStream("/language_data/word-classes-en-ru.txt");	
-			}else{
-				istrm =	new FileInputStream(langDefinitionFile);
-			}
-			grouper.clearDictionary();
-			grouper.loadDictionary(new InputStreamReader(istrm));
-			istrm.close();
+			reloadLanguageDefinition(path);
 		} catch (IOException e) {
-			e.printStackTrace();
-		}		
+			JOptionPane.showMessageDialog(this, "Failed to load file\n"+path+"\nwith error:\n"+e.getMessage());			
+		}
+	}
+	public void setDisplayColors(Color foreground, Color background,
+			Color alignKey) {
+		display.setForeground(foreground);
+		display.setBackground(background);
+		display.setAlignKeyColor(alignKey);
 	}
 }
