@@ -13,17 +13,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
 
-import javax.management.RuntimeErrorException;
 import javax.swing.JColorChooser;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
-import javax.swing.border.LineBorder;
 
 import org.ratson.speedread.PhraseDisplay;
 import org.ratson.speedread.SpeedReadFrame;
 import org.ratson.speedread.core.ProportionalTimeEstimator;
-import org.ratson.speedread.core.TimeEstimator;
 
 @SuppressWarnings("serial")
 public class SettingsDialog extends SettingsDialogBase {
@@ -108,7 +105,6 @@ public class SettingsDialog extends SettingsDialogBase {
 				if (e.getActionCommand().equals("OK")){
 					applySettings();
 				}else if (e.getActionCommand().equals("Cancel")){
-					System.out.println("Cancelled");
 				}else{
 					System.err.println("Unknown action command: "+e.getActionCommand());
 					return;

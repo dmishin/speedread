@@ -1,6 +1,5 @@
 package org.ratson.speedread.core;
 
-import java.util.HashMap;
 
 public class ProportionalTimeEstimator implements TimeEstimator{
 	public double bigWordPenalty = 1;

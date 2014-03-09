@@ -15,13 +15,11 @@ import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.prefs.Preferences;
@@ -48,9 +46,6 @@ import org.ratson.speedread.core.TimeEstimator;
 import org.ratson.speedread.core.WordBreaker;
 import org.ratson.speedread.core.WordGrouper;
 
-
-
-
 import dialogs.HelpDialog;
 import dialogs.JFontChooser;
 import dialogs.SettingsDialog;
@@ -73,15 +68,40 @@ public class SpeedReadFrame extends JFrame {
 	private static final String KEY_LAST_DIR = "LastDirectory";
 	
 	private static final String KEY_WORDBREAK_DICTIONARY = "Dictionary";
-			
+	
+	private static final String KEY_SCHED_WORD_WEIGHT = "SchedulerWordWeight";
+	private static final String KEY_SCHED_LETTER_WEIGHT = "SchedulerLetterWeight";
+	private static final String KEY_SCHED_LONG_WORD_TRESH = "SchedulerLongWordTreshold";
+	private static final String KEY_SCHED_LONG_WORD_LETTER_WEIGHT = "SchedulerLongWordLetterWeight";
+		
 	private static final String CMDLINE_HELP_TEXT = 
 			"java -jar speedread.jar [ARGS] [FILE]\n"+
 			"   ARGS is one of:\n"+
 			"   -h --help  Show this help\n"+
 			"   -c --clipboard  Load clipboard contents on start\n"+
 			"   FILE must be text file. For now, only plain text files are supported.";
-	private String wordBreakerDictionary;
+	//////// Algorithm-specific settings /////////
+	private AlignmentRule aligner;
+	private WordGrouper grouper;
+	private WordBreaker breaker;
+	private TimeEstimator timeEstimator = new ProportionalTimeEstimator();
 
+	private ArrayList<AlignedWord> words = new ArrayList<SpeedReadFrame.AlignedWord>();
+	private boolean isPlaying = false;
+	
+
+	private Timer timer = new Timer();
+	private int charactersPerMinute = 3000;
+	private int speedIncreaseStep=50;
+	
+	private int currentWord = 0;
+	//////// GUI controls ////////////
+	private PhraseDisplay display;
+	private JProgressBar progressBar;
+	private File lastDirectory = new File ("./");
+	private JLabel labelCPM;
+	private String langDefinitionFile="";
+	
 
 	private void loadPrefs(){
 		try{
@@ -111,9 +131,14 @@ public class SpeedReadFrame extends JFrame {
 				lastDirectory = new File("./");
 			
 			//load word breaker settings
-			wordBreakerDictionary = prefs.get(KEY_WORDBREAK_DICTIONARY, "");
+			langDefinitionFile = prefs.get(KEY_WORDBREAK_DICTIONARY, "");
 			
 			//load scheduler settings
+			ProportionalTimeEstimator scheduler = (ProportionalTimeEstimator)timeEstimator;
+			scheduler.wordDelay = prefs.getDouble(KEY_SCHED_WORD_WEIGHT,scheduler.wordDelay); 
+			scheduler.characterWeight = prefs.getDouble(KEY_SCHED_LETTER_WEIGHT,scheduler.characterWeight);
+			scheduler.bigWordTreshold = prefs.getInt(KEY_SCHED_LONG_WORD_TRESH, scheduler.bigWordTreshold);
+			scheduler.bigWordPenalty = prefs.getDouble(KEY_SCHED_LONG_WORD_LETTER_WEIGHT, scheduler.bigWordPenalty);			
 			
 		}catch(Exception e){
 			System.err.println("Failed to load preferences:"+e.getMessage());
@@ -139,6 +164,14 @@ public class SpeedReadFrame extends JFrame {
 		prefs.put(KEY_COLOR_ALIGN, hexCOlor(display.getAlignKeyColor()));
 
 		prefs.put(KEY_LAST_DIR, lastDirectory.getAbsolutePath());
+
+		ProportionalTimeEstimator scheduler = (ProportionalTimeEstimator)timeEstimator;
+		prefs.putDouble(KEY_SCHED_WORD_WEIGHT,scheduler.wordDelay); 
+		prefs.putDouble(KEY_SCHED_LETTER_WEIGHT,scheduler.characterWeight);
+		prefs.putInt(KEY_SCHED_LONG_WORD_TRESH, scheduler.bigWordTreshold);
+		prefs.putDouble(KEY_SCHED_LONG_WORD_LETTER_WEIGHT, scheduler.bigWordPenalty);
+		
+		prefs.put(KEY_WORDBREAK_DICTIONARY, langDefinitionFile);
 	}
 	private static void createAndShowGUI(boolean loadClipboard, String fileToLoad)
 	{
@@ -156,6 +189,7 @@ public class SpeedReadFrame extends JFrame {
 			System.err.println(e.getMessage());
 			System.exit(1);
 		}
+		mainFrame.setLocationRelativeTo(null);
 		mainFrame.setVisible(true);
 	}
 	private void doExit(int errCode){
@@ -202,33 +236,12 @@ public class SpeedReadFrame extends JFrame {
             }
         });
 	}
-	//////// Algorithm-specific settings /////////
-	private AlignmentRule aligner;
-	private WordGrouper grouper;
-	private WordBreaker breaker;
-	private TimeEstimator timeEstimator;
-	private ArrayList<AlignedWord> words = new ArrayList<SpeedReadFrame.AlignedWord>();
-	private boolean isPlaying = false;
-	
-
-	private Timer timer = new Timer();
-	private int charactersPerMinute = 3000;
-	private int speedIncreaseStep=50;
-	
-	private int currentWord = 0;
-	//////// GUI controls ////////////
-	private PhraseDisplay display;
-	private JProgressBar progressBar;
-	private File lastDirectory = new File ("./");
-	private JLabel labelCPM;
-	private String langDefinitionFile="";
-	
 	
 	public SpeedReadFrame() {
 		super("SpeedRead");
 		createUI();
-		initLanguage();
 		loadPrefs();
+		initLanguage(); //must be after loading prefs to load correct dictionary
 	}
 	
 	private void createUI() {
@@ -247,7 +260,7 @@ public class SpeedReadFrame extends JFrame {
 
 		Box buttons = Box.createHorizontalBox();
 		
-		JLabel helpLabel = new JLabel("[Space] - play/pause, [B] - back, [F] - forward, [A] - again, [Ctrl+V] - paste");
+		JLabel helpLabel = new JLabel("[Space] - play/pause, [Ctrl+V] - paste, [H] - help, [S] - settings");
 		labelCPM = new JLabel("--- words/min");
 		
 		//helpLabel.setBorder(new LineBorder(Color.RED));
@@ -464,12 +477,11 @@ public class SpeedReadFrame extends JFrame {
 		grouper = new WordGrouper();
 		aligner = new EuropeanAlignmentRule();
 		try {
-			reloadLanguageDefinition("");
+			reloadLanguageDefinition(langDefinitionFile);
 		} catch (IOException e) {
-			System.err.println("Faield to load default language definition!");
+			JOptionPane.showMessageDialog(this, "Failed to load dicitonary file:\n"+e.getMessage());
 			e.printStackTrace();
 		}
-		timeEstimator = new ProportionalTimeEstimator();
 	}
 
 	public void loadClipboard(){
@@ -581,7 +593,7 @@ public class SpeedReadFrame extends JFrame {
 			istrm =	new FileInputStream(langDefinitionFile);
 		}
 		grouper.clearDictionary();
-		grouper.loadDictionary(new InputStreamReader(istrm));
+		grouper.loadDictionary(new InputStreamReader(istrm, "UTF-8"));
 		langDefinitionFile = strLangDefPath;
 		istrm.close();
 	}

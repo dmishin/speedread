@@ -1,7 +1,6 @@
 package org.ratson.speedread.core;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 /** Word breaker for the European languages, using spaces for word separation
  * */
