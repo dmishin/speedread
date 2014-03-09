@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import configuration.Configurable;
-
 /**Transform list of words into groups.
  * Each group is a several words and integer, pointing to the "main" word in the group
  * @author dmishin

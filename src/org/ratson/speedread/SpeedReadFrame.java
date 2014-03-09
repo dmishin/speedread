@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.prefs.Preferences;
@@ -47,14 +46,12 @@ import org.ratson.speedread.core.TimeEstimator;
 import org.ratson.speedread.core.WordBreaker;
 import org.ratson.speedread.core.WordGrouper;
 
-import configuration.Configurable;
-
 import dialogs.HelpDialog;
 import dialogs.JFontChooser;
 import dialogs.SettingsDialog;
 
 @SuppressWarnings("serial")
-public class SpeedReadFrame extends JFrame implements Configurable{
+public class SpeedReadFrame extends JFrame {
 
 	private static class AlignedWord{
 		public int align;
@@ -71,15 +68,40 @@ public class SpeedReadFrame extends JFrame implements Configurable{
 	private static final String KEY_LAST_DIR = "LastDirectory";
 	
 	private static final String KEY_WORDBREAK_DICTIONARY = "Dictionary";
-			
+	
+	private static final String KEY_SCHED_WORD_WEIGHT = "SchedulerWordWeight";
+	private static final String KEY_SCHED_LETTER_WEIGHT = "SchedulerLetterWeight";
+	private static final String KEY_SCHED_LONG_WORD_TRESH = "SchedulerLongWordTreshold";
+	private static final String KEY_SCHED_LONG_WORD_LETTER_WEIGHT = "SchedulerLongWordLetterWeight";
+		
 	private static final String CMDLINE_HELP_TEXT = 
 			"java -jar speedread.jar [ARGS] [FILE]\n"+
 			"   ARGS is one of:\n"+
 			"   -h --help  Show this help\n"+
 			"   -c --clipboard  Load clipboard contents on start\n"+
 			"   FILE must be text file. For now, only plain text files are supported.";
-	private String wordBreakerDictionary;
+	//////// Algorithm-specific settings /////////
+	private AlignmentRule aligner;
+	private WordGrouper grouper;
+	private WordBreaker breaker;
+	private TimeEstimator timeEstimator = new ProportionalTimeEstimator();
 
+	private ArrayList<AlignedWord> words = new ArrayList<SpeedReadFrame.AlignedWord>();
+	private boolean isPlaying = false;
+	
+
+	private Timer timer = new Timer();
+	private int charactersPerMinute = 3000;
+	private int speedIncreaseStep=50;
+	
+	private int currentWord = 0;
+	//////// GUI controls ////////////
+	private PhraseDisplay display;
+	private JProgressBar progressBar;
+	private File lastDirectory = new File ("./");
+	private JLabel labelCPM;
+	private String langDefinitionFile="";
+	
 
 	private void loadPrefs(){
 		try{
@@ -109,9 +131,14 @@ public class SpeedReadFrame extends JFrame implements Configurable{
 				lastDirectory = new File("./");
 			
 			//load word breaker settings
-			wordBreakerDictionary = prefs.get(KEY_WORDBREAK_DICTIONARY, "");
+			langDefinitionFile = prefs.get(KEY_WORDBREAK_DICTIONARY, "");
 			
 			//load scheduler settings
+			ProportionalTimeEstimator scheduler = (ProportionalTimeEstimator)timeEstimator;
+			scheduler.wordDelay = prefs.getDouble(KEY_SCHED_WORD_WEIGHT,scheduler.wordDelay); 
+			scheduler.characterWeight = prefs.getDouble(KEY_SCHED_LETTER_WEIGHT,scheduler.characterWeight);
+			scheduler.bigWordTreshold = prefs.getInt(KEY_SCHED_LONG_WORD_TRESH, scheduler.bigWordTreshold);
+			scheduler.bigWordPenalty = prefs.getDouble(KEY_SCHED_LONG_WORD_LETTER_WEIGHT, scheduler.bigWordPenalty);			
 			
 		}catch(Exception e){
 			System.err.println("Failed to load preferences:"+e.getMessage());
@@ -137,6 +164,14 @@ public class SpeedReadFrame extends JFrame implements Configurable{
 		prefs.put(KEY_COLOR_ALIGN, hexCOlor(display.getAlignKeyColor()));
 
 		prefs.put(KEY_LAST_DIR, lastDirectory.getAbsolutePath());
+
+		ProportionalTimeEstimator scheduler = (ProportionalTimeEstimator)timeEstimator;
+		prefs.putDouble(KEY_SCHED_WORD_WEIGHT,scheduler.wordDelay); 
+		prefs.putDouble(KEY_SCHED_LETTER_WEIGHT,scheduler.characterWeight);
+		prefs.putInt(KEY_SCHED_LONG_WORD_TRESH, scheduler.bigWordTreshold);
+		prefs.putDouble(KEY_SCHED_LONG_WORD_LETTER_WEIGHT, scheduler.bigWordPenalty);
+		
+		prefs.put(KEY_WORDBREAK_DICTIONARY, langDefinitionFile);
 	}
 	private static void createAndShowGUI(boolean loadClipboard, String fileToLoad)
 	{
@@ -154,6 +189,7 @@ public class SpeedReadFrame extends JFrame implements Configurable{
 			System.err.println(e.getMessage());
 			System.exit(1);
 		}
+		mainFrame.setLocationRelativeTo(null);
 		mainFrame.setVisible(true);
 	}
 	private void doExit(int errCode){
@@ -200,33 +236,12 @@ public class SpeedReadFrame extends JFrame implements Configurable{
             }
         });
 	}
-	//////// Algorithm-specific settings /////////
-	private AlignmentRule aligner;
-	private WordGrouper grouper;
-	private WordBreaker breaker;
-	private TimeEstimator timeEstimator;
-	private ArrayList<AlignedWord> words = new ArrayList<SpeedReadFrame.AlignedWord>();
-	private boolean isPlaying = false;
-	
-
-	private Timer timer = new Timer();
-	private int charactersPerMinute = 3000;
-	private int speedIncreaseStep=50;
-	
-	private int currentWord = 0;
-	//////// GUI controls ////////////
-	private PhraseDisplay display;
-	private JProgressBar progressBar;
-	private File lastDirectory = new File ("./");
-	private JLabel labelCPM;
-	private String langDefinitionFile="";
-	
 	
 	public SpeedReadFrame() {
 		super("SpeedRead");
 		createUI();
-		initLanguage();
 		loadPrefs();
+		initLanguage(); //must be after loading prefs to load correct dictionary
 	}
 	
 	private void createUI() {
@@ -245,7 +260,7 @@ public class SpeedReadFrame extends JFrame implements Configurable{
 
 		Box buttons = Box.createHorizontalBox();
 		
-		JLabel helpLabel = new JLabel("[Space] - play/pause, [B] - back, [F] - forward, [A] - again, [Ctrl+V] - paste");
+		JLabel helpLabel = new JLabel("[Space] - play/pause, [Ctrl+V] - paste, [H] - help, [S] - settings");
 		labelCPM = new JLabel("--- words/min");
 		
 		//helpLabel.setBorder(new LineBorder(Color.RED));
@@ -461,8 +476,12 @@ public class SpeedReadFrame extends JFrame implements Configurable{
 		breaker = new SpaceWordBreaker();
 		grouper = new WordGrouper();
 		aligner = new EuropeanAlignmentRule();
-		reloadLanguageDefinition("");
-		timeEstimator = new ProportionalTimeEstimator();
+		try {
+			reloadLanguageDefinition(langDefinitionFile);
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(this, "Failed to load dicitonary file:\n"+e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 	public void loadClipboard(){
@@ -566,82 +585,34 @@ public class SpeedReadFrame extends JFrame implements Configurable{
 	public String getLangDefinitionFilePath() {
 		return langDefinitionFile;
 	}
-	public void reloadLanguageDefinition(String strLangDefPath) {
+	public void reloadLanguageDefinition(String strLangDefPath) throws IOException {
 		InputStream istrm;
+		if (langDefinitionFile.isEmpty()){
+			istrm =	getClass().getResourceAsStream("/language_data/word-classes-en-ru.txt");	
+		}else{
+			istrm =	new FileInputStream(langDefinitionFile);
+		}
+		grouper.clearDictionary();
+		grouper.loadDictionary(new InputStreamReader(istrm, "UTF-8"));
+		langDefinitionFile = strLangDefPath;
+		istrm.close();
+	}
+	public void setDisplayFont(Font font) {
+		display.setFont(font);
+	}
+	public void setLangDefinitionFilePath(String path) {
+		if (path.equals(langDefinitionFile))
+			return; //nothing to do here;
 		try {
-			if (langDefinitionFile.isEmpty()){
-				istrm =	getClass().getResourceAsStream("/language_data/word-classes-en-ru.txt");	
-			}else{
-				istrm =	new FileInputStream(langDefinitionFile);
-			}
-			grouper.clearDictionary();
-			grouper.loadDictionary(new InputStreamReader(istrm));
-			istrm.close();
+			reloadLanguageDefinition(path);
 		} catch (IOException e) {
-			e.printStackTrace();
-		}		
+			JOptionPane.showMessageDialog(this, "Failed to load file\n"+path+"\nwith error:\n"+e.getMessage());			
+		}
 	}
-	
-	
-	@Override
-	public HashMap<String, Object> getConfiguration() {
-		HashMap<String, Object> config = new HashMap<String, Object>();
-		config.put(KEY_CPM, charactersPerMinute);
-		
-		Font font = display.getFont();
-		config.put(KEY_FONT_FAMILY, font.getName());
-		config.put(KEY_FONT_SIZE, font.getSize());
-		config.put(KEY_FONT_STYLE, font.getStyle());
-		
-		//save colors
-		config.put(KEY_COLOR_BG, hexCOlor(display.getBackground()));
-		config.put(KEY_COLOR_FONT, hexCOlor(display.getForeground()));
-		config.put(KEY_COLOR_ALIGN, hexCOlor(display.getAlignKeyColor()));
-
-		config.put(KEY_LAST_DIR, lastDirectory.getAbsolutePath());
-		return config;
-	}
-	@Override
-	public HashMap<String, Object> getDefaultConfiguration() {
-		HashMap<String, Object> config = new HashMap<String, Object>();
-		config.put(KEY_CPM, 2000);
-		
-		config.put(KEY_FONT_FAMILY, "Arial");
-		config.put(KEY_FONT_SIZE, "24");
-		config.put(KEY_FONT_STYLE, 0);
-		
-		//save colors
-		config.put(KEY_COLOR_BG, "");
-		config.put(KEY_COLOR_FONT, "");
-		config.put(KEY_COLOR_ALIGN, "");
-
-		config.put(KEY_LAST_DIR, "");
-		return config;
-	}
-	@Override
-	public void applyConfiguration(HashMap<String, Object> prefs) {
-		// TODO Auto-generated method stub
-		charactersPerMinute = (Integer)prefs.get(KEY_CPM);
-		
-		
-		String fontName = (String)prefs.get(KEY_FONT_FAMILY); 
-		int fSize = (Integer)prefs.get(KEY_FONT_SIZE);
-		int fStyle = (Integer)prefs.get(KEY_FONT_STYLE);
-		
-		
-		//apply colors
-		String clr = prefs.get(KEY_COLOR_BG, null);
-		if (clr!=null)
-			display.setBackground(Color.decode(clr));
-		clr = prefs.get(KEY_COLOR_FONT, null);
-		if (clr!=null)
-			display.setForeground(Color.decode(clr.toUpperCase()));
-		clr = prefs.get(KEY_COLOR_ALIGN, null);
-		if (clr!=null)
-			display.setAlignKeyColor(Color.decode(clr.toUpperCase()));
-		lastDirectory = new File(prefs.get(KEY_LAST_DIR, "./"));
-		if (!lastDirectory.exists() || !lastDirectory.isDirectory())
-			lastDirectory = new File("./");
-		
+	public void setDisplayColors(Color foreground, Color background,
+			Color alignKey) {
+		display.setForeground(foreground);
+		display.setBackground(background);
+		display.setAlignKeyColor(alignKey);
 	}
 }

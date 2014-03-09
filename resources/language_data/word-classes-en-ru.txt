@@ -1,16 +1,16 @@
 #Postfix words
-ли	R
+Р»Рё	R
 
 #Prepositions
-к	L
-ко	L
-при	L
-за	L
-со	L
-с	L
-не	L
+Рє	L
+РєРѕ	L
+РїСЂРё	L
+Р·Р°	L
+СЃРѕ	L
+СЃ	L
+РЅРµ	L
 -	S
-то	S
+С‚Рѕ	S
 
 #Punctuation marks
 ,	P

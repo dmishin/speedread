@@ -1,0 +1,33 @@
+#Dictionary file
+# File format:
+# Dictionary must be a text file in UTF-8 encoding.
+# Lines starting with # are comments; empty lines are ignored.
+# Other lines have format:
+# <WORD> <TAB> <CLASS>
+# where 
+#   <WORD> is a language word
+#   <TAB> is *exactly* *one* *tabulation* *character*.
+#         There should be no spaces or other separators.
+#   <CLASS> is one of 
+#     L - Left-grouping small word
+#     R - Right-grouping small word
+#     S - L + R 
+#     P - punctuation character
+
+# Example for English:
+      
+#Punctuation marks
+,	P
+.	P
+?	P
+!	P
+;	P
+:	P
+'	P
+"	P
+
+#### English classes
+a	L
+the	L
+
+and	R
