@@ -1,0 +1,7 @@
+
+
+Updating icon:
+
+
+convert resources/sr-icon.png sr-icon.ico
+wine ~/Soft/winrun4j/bin/RCEDIT.exe /I windows/speedread.exe sr-icon.ico
