@@ -25,16 +25,16 @@
             </fileset>
         </copy>
     </target>
-    <target name="clean">
+    <target name="clean" description="Clean intermediate build files">
         <delete dir="bin"/>
     </target>
 	
-    <target name="clean-build">
+    <target name="distclean" description="Clean distribution files only">
         <delete dir="build"/>
     </target>
 	
-    <target depends="clean" name="cleanall"/>
-    <target depends="build-project" name="build"/>
+    <target depends="clean,distclean" name="cleanall" description="Clean all generated files"/>
+    <target depends="build-project" name="build" description="Compile source files"/>
 	
     <target depends="init" name="build-project">
         <echo message="${ant.project.name}: ${ant.file}"/>
@@ -45,20 +45,20 @@
         </javac>
     </target>
 	
-    <target name="SpeedReadFrame">
+    <target name="run" depends="build" description="Run the application">
         <java classname="org.ratson.speedread.SpeedReadFrame" failonerror="true" fork="yes">
             <!-- <arg line="sample-rus.txt"/> -->
             <classpath refid="SpeedRead.classpath"/>
         </java>
     </target>
-	<target name="jar" depends="init,build">
+	<target name="jar" depends="init,build" description="Make runnable JAR file">
 	  <jar destfile="build/speedread.jar" basedir="bin">
 		<manifest>
 			<attribute name="Main-Class" value="org.ratson.speedread.SpeedReadFrame"/>
 	    </manifest>
 	  </jar>
 	</target>
-	<target name="distrib" depends="init,jar">
+	<target name="dist" depends="init,jar" description="Create distribution ZIP file">
 		<zip destfile="build/speedread-${version}.zip">
 			<zipfileset dir="windows">
 			</zipfileset>
