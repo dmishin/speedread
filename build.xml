@@ -4,6 +4,7 @@
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.7"/>
     <property name="source" value="1.7"/>
+    <property name="version" value="1.0"/>
     <path id="SpeedRead.classpath">
         <pathelement location="bin"/>
     </path>
@@ -58,8 +59,11 @@
 	  </jar>
 	</target>
 	<target name="distrib" depends="init,jar">
-        <copy includeemptydirs="false" todir="build"> <!-- copy resources -->
-            <fileset dir="windows"/>
-        </copy>
+		<zip destfile="build/speedread-${version}.zip">
+			<zipfileset dir="windows">
+			</zipfileset>
+			<zipfileset dir="build" includes="speedread.jar">
+			</zipfileset>			
+		</zip>
 	</target>
 </project>
