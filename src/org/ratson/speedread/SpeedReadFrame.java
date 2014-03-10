@@ -45,10 +45,9 @@ import org.ratson.speedread.core.SpaceWordBreaker;
 import org.ratson.speedread.core.TimeEstimator;
 import org.ratson.speedread.core.WordBreaker;
 import org.ratson.speedread.core.WordGrouper;
-
-import dialogs.HelpDialog;
-import dialogs.JFontChooser;
-import dialogs.SettingsDialog;
+import org.ratson.speedread.dialogs.HelpDialog;
+import org.ratson.speedread.dialogs.JFontChooser;
+import org.ratson.speedread.dialogs.SettingsDialog;
 
 @SuppressWarnings("serial")
 public class SpeedReadFrame extends JFrame {

@@ -1,4 +1,4 @@
-package dialogs;
+package org.ratson.speedread.dialogs;
 
 import java.awt.Color;
 import java.awt.Font;

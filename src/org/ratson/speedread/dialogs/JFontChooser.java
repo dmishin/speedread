@@ -1,4 +1,4 @@
-package dialogs;
+package org.ratson.speedread.dialogs;
 
 /*************************************************************
 * Copyright 2004-2005,2007-2008 Masahiko SAWAI All Rights Reserved. 
