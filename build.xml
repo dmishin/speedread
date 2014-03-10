@@ -50,4 +50,16 @@
             <classpath refid="SpeedRead.classpath"/>
         </java>
     </target>
+	<target name="jar" depends="init,build">
+	  <jar destfile="build/speedread.jar" basedir="bin">
+		<manifest>
+			<attribute name="Main-Class" value="org.ratson.speedread.SpeedReadFrame"/>
+	    </manifest>
+	  </jar>
+	</target>
+	<target name="distrib" depends="init,jar">
+        <copy includeemptydirs="false" todir="build"> <!-- copy resources -->
+            <fileset dir="windows"/>
+        </copy>
+	</target>
 </project>
